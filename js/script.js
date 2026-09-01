@@ -216,6 +216,10 @@ const showCookieModal = () => {
         overlay.classList.add("visible");
         overlay.setAttribute("aria-hidden", "false");
 
+        // Force a style recalc so the overlay is focusable before it is
+        // focused (its visibility flips in via a CSS transition)
+        void overlay.offsetWidth;
+
         // Focus the modal for accessibility
         const modal = overlay.querySelector(".cookie-modal");
         if (modal) {
@@ -223,6 +227,7 @@ const showCookieModal = () => {
         }
     }
 };
+
 
 const hideCookieModal = () => {
     const overlay = document.getElementById("cookieModalOverlay");
@@ -256,11 +261,16 @@ const initCookieConsent = () => {
     // Sync the settings toggle with the stored decision
     syncToggleWithConsent();
 
-    // Only show banner if no decision has been made
-    if (!consent) {
+    // Only show banner if no decision has been made. Only the exact stored
+    // values count as a decision; a missing or corrupted value re-opens the
+    // banner so the visitor is always asked.
+    const hasDecision = consent === "accepted" || consent === "rejected";
+
+    if (!hasDecision) {
         // Small delay so the banner doesn't appear immediately on page load
         setTimeout(showCookieBanner, 1000);
     }
+
 
     // Accept button
     const acceptBtn = document.getElementById("cookieAccept");
@@ -345,7 +355,36 @@ const initCookieConsent = () => {
                 hideCookieModal();
             }
         });
+
+        // Keep keyboard focus inside the modal while it is open
+        // (the dialog is declared aria-modal="true")
+        modalOverlay.addEventListener("keydown", (e) => {
+            if (e.key !== "Tab") {
+                return;
+            }
+
+            const focusable = modalOverlay.querySelectorAll(
+                "a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex=\"-1\"])"
+            );
+
+            if (!focusable.length) {
+                return;
+            }
+
+            const first = focusable[0];
+            const last = focusable[focusable.length - 1];
+            const modalBox = modalOverlay.querySelector(".cookie-modal");
+
+            if (e.shiftKey && (document.activeElement === first || document.activeElement === modalBox)) {
+                e.preventDefault();
+                last.focus();
+            } else if (!e.shiftKey && document.activeElement === last) {
+                e.preventDefault();
+                first.focus();
+            }
+        });
     }
+
 
     // Close modal on Escape key
     document.addEventListener("keydown", (e) => {

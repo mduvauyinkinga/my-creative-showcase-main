@@ -121,12 +121,14 @@ img {
     letter-spacing: 1px;
 }
 
-.section-heading h2 {
+.section-heading h2,
+.section-heading h1 {
     font-size: clamp(2rem, 4vw, 3.2rem);
     font-weight: 700;
     line-height: 1.05;
     letter-spacing: -1.5px;
 }
+
 
 .section-description {
     max-width: 680px;
@@ -2030,13 +2032,17 @@ main,
     padding: 20px;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s ease, visibility 0.3s ease;
+    /* On hide: fade opacity out first, then flip visibility after the fade */
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
 }
 
 .cookie-modal-overlay.visible {
     opacity: 1;
     visibility: visible;
+    /* On show: visibility flips immediately so the modal can be focused */
+    transition: opacity 0.3s ease, visibility 0s;
 }
+
 
 .cookie-modal {
     background: var(--surface);
